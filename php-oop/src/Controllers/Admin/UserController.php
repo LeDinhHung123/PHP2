@@ -9,6 +9,7 @@ use Rakit\Validation\Validator;
 class UserController extends Controller
 {
     private User $user;
+
     public function __construct()
     {
         $this->user = new User();
@@ -16,10 +17,11 @@ class UserController extends Controller
 
     public function index()
     {
-        $users = $this->user->all();
+        [$users, $totalPage] = $this->user->paginate($_GET['page'] ?? 1);
 
         $this->renderViewAdmin('users.index', [
-            'users' => $users
+            'users' => $users,
+            'totalPage' => $totalPage
         ]);
     }
 
@@ -37,7 +39,6 @@ class UserController extends Controller
             'password'              => 'required|min:6',
             'confirm_password'      => 'required|same:password',
             'avatar'                => 'uploaded_file:0,2M,png,jpg,jpeg',
-            'type'                  => 'required|in:admin,member',
         ]);
         $validation->validate();
 
@@ -48,10 +49,9 @@ class UserController extends Controller
             exit;
         } else {
             $data = [
-                'name'      => $_POST['name'],
-                'email'     => $_POST['email'],
-                'type'      => $_POST['type'],
-                'password'  => password_hash($_POST['password'], PASSWORD_DEFAULT),
+                'name'     => $_POST['name'],
+                'email'    => $_POST['email'],
+                'password' => password_hash($_POST['password'], PASSWORD_DEFAULT),
             ];
 
             if (isset($_FILES['avatar']) && $_FILES['avatar']['size'] > 0) {
@@ -107,7 +107,6 @@ class UserController extends Controller
             'email'                 => 'required|email',
             'password'              => 'min:6',
             'avatar'                => 'uploaded_file:0,2M,png,jpg,jpeg',
-            'type'                  => 'required|in:admin,member',
         ]);
         $validation->validate();
 
@@ -118,10 +117,9 @@ class UserController extends Controller
             exit;
         } else {
             $data = [
-                'name'      => $_POST['name'],
-                'email'     => $_POST['email'],
-                'type'      => $_POST['type'],
-                'password'  => !empty($_POST['password'])
+                'name'     => $_POST['name'],
+                'email'    => $_POST['email'],
+                'password' => !empty($_POST['password'])
                     ? password_hash($_POST['password'], PASSWORD_DEFAULT) : $user['password'],
             ];
 
@@ -163,23 +161,18 @@ class UserController extends Controller
 
     public function delete($id)
     {
-        try {
-            $user = $this->user->findByID($id);
+        $user = $this->user->findByID($id);
 
-            $this->user->delete($id);
+        $this->user->delete($id);
 
-            if ($user['avatar'] && file_exists( PATH_ROOT . $user['avatar'] ) ) {
-                unlink(PATH_ROOT . $user['avatar']);
-            }
-
-            $_SESSION['status'] = true;
-            $_SESSION['msg'] = 'Thao tác thành công!';
-        } catch (\Throwable $th) {
-            $_SESSION['status'] = false;
-            $_SESSION['msg'] = 'Thao tác KHÔNG thành công!';
+        if (
+            $user['avatar']
+            && file_exists(PATH_ROOT . $user['avatar'])
+        ) {
+            unlink(PATH_ROOT . $user['avatar']);
         }
 
-        header('Location: ' . url('admin/Users'));
+        header('Location: ' . url('admin/users'));
         exit();
     }
 }

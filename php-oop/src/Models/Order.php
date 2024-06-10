@@ -4,9 +4,9 @@ namespace Hungt\PhpOop\Models;
 
 use Hungt\PhpOop\Commons\Model;
 
-class Product extends Model 
+class Order extends Model 
 {
-    protected string $tableName = 'products';
+    protected string $tableName = 'orders';
 
     
 }
